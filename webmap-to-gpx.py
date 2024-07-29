@@ -27,7 +27,7 @@ class Coordinate:
 
 # --------------------------------------------------------------------------------------------------
 #
-# Global variables.
+# Class definition.
 #
 # --------------------------------------------------------------------------------------------------
 class WebmapToGpx:
@@ -36,11 +36,20 @@ class WebmapToGpx:
     def parse(url: str, timeout_seconds: int) -> None:
         logging.basicConfig(level=logging.DEBUG)
 
+        page_name, line_data_dict = WebmapToGpx.__parse_web_sources(
+            url=url, timeout_seconds=timeout_seconds
+        )
+        tracks = WebmapToGpx.__extract_tracks(line_data_dict)
+        gpx = WebmapToGpx.__convert_to_gpx(tracks)
+        WebmapToGpx.__save_gpx_to_file(page_name, gpx)
+
+        logging.info("Done!")
+
+    @staticmethod
+    def __parse_web_sources(url: str, timeout_seconds: int):
+
         logging.info("Parsing '%s' webpage sources.", url)
 
-        #
-        # Parse website sources at given URL.
-        #
         with urllib.request.urlopen(url=url, timeout=timeout_seconds) as webpage_handle:
             webpage_sources = str(webpage_handle.read().decode("utf8"))
             if len(webpage_sources) == 0:
@@ -85,9 +94,10 @@ class WebmapToGpx:
                 len(point_data_dict["features"]),
             )
 
-        #
-        # Unify multiple track.
-        #
+        return page_name, line_data_dict
+
+    @staticmethod
+    def __extract_tracks(line_data_dict):
         logging.info("Creating list of tracks.")
 
         tracks: list = []
@@ -96,7 +106,6 @@ class WebmapToGpx:
             track: list = []
 
             if raw_track["geometry"]["type"] == "LineString":
-
                 for coordinate in raw_track["geometry"]["coordinates"]:
                     track.append(
                         Coordinate(latitude=coordinate[1], longitude=coordinate[0])
@@ -117,9 +126,10 @@ class WebmapToGpx:
 
         logging.info("Parsed %d tracks.", len(tracks))
 
-        #
-        # Create and populate gpxpy object.
-        #
+        return tracks
+
+    @staticmethod
+    def __convert_to_gpx(tracks):
         logging.info("Creating gpxpy object.")
 
         gpx = gpxpy.gpx.GPX()
@@ -136,6 +146,10 @@ class WebmapToGpx:
                     gpxpy.gpx.GPXTrackPoint(coordinate.latitude, coordinate.longitude)
                 )
 
+        return gpx
+
+    @staticmethod
+    def __save_gpx_to_file(page_name, gpx):
         gpx_filename = page_name + ".gpx"
         logging.info("Exporting to '%s' file.", gpx_filename)
 
@@ -143,8 +157,6 @@ class WebmapToGpx:
         gpx_filepath = os.path.join(current_script_folder_path, gpx_filename)
         with open(file=gpx_filepath, mode="w", encoding="utf-8") as gpx_file:
             gpx_file.write(gpx.to_xml())
-
-        logging.info("Done!")
 
 
 # --------------------------------------------------------------------------------------------------
