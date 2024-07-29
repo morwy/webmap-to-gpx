@@ -31,8 +31,6 @@ class Coordinate:
 #
 # --------------------------------------------------------------------------------------------------
 class WebmapToGpx:
-    def __init__(self) -> None:
-        pass
 
     @staticmethod
     def parse(url: str, timeout_seconds: int) -> None:
@@ -95,9 +93,9 @@ class WebmapToGpx:
         tracks: list = []
 
         for raw_track in line_data_dict["features"]:
+            track: list = []
 
             if raw_track["geometry"]["type"] == "LineString":
-                track: list = []
 
                 for coordinate in raw_track["geometry"]["coordinates"]:
                     track.append(
@@ -108,7 +106,7 @@ class WebmapToGpx:
 
             if raw_track["geometry"]["type"] == "MultiLineString":
                 for line in raw_track["geometry"]["coordinates"]:
-                    track: list = []
+                    track = []
 
                     for coordinate in line:
                         track.append(
